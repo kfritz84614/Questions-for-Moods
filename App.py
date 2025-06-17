@@ -1,30 +1,29 @@
 import streamlit as st
-import openai
 import os
+from openai import OpenAI
 
-st.set_page_config(page_title="Solomon Bot", layout="centered")
-
-# --- Setup ---
-st.title("🦉 Solomon Bot")
-st.subheader("Receive wisdom like Solomon, based on your current mood.")
-
-# --- API Key ---
-openai_api_key = st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else os.getenv("OPENAI_API_KEY")
-
-if not openai_api_key:
-    st.warning("Please set your OpenAI API key in Streamlit secrets or as an environment variable.")
+# --- Set up OpenAI client ---
+api_key = st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else os.getenv("OPENAI_API_KEY")
+if not api_key:
+    st.error("Please set your OpenAI API key.")
     st.stop()
 
-openai.api_key = openai_api_key
+client = OpenAI(api_key=api_key)
 
-# --- Mood Selection ---
+# --- Define moods ---
 moods = [
     "joyful", "sorrowful", "anxious", "angry", "hopeful", "weary", "contemplative",
     "grateful", "confused", "determined", "fearful", "bored"
 ]
+
+# --- UI ---
+st.set_page_config(page_title="Solomon Bot", layout="centered")
+st.title("🦉 Solomon Bot")
+st.subheader("Receive wisdom like Solomon, based on your current mood.")
+
 mood = st.selectbox("What is your mood right now?", sorted(moods))
 
-# --- Call OpenAI ---
+# --- Wisdom generation ---
 def get_solomon_question(mood: str) -> str:
     prompt = (
         f"You are King Solomon from the Old Testament. "
@@ -33,8 +32,8 @@ def get_solomon_question(mood: str) -> str:
         f"Your tone should be wise, reflective, and ancient."
     )
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4",  # or "gpt-3.5-turbo" if using that
+    response = client.chat.completions.create(
+        model="gpt-4",  # or "gpt-3.5-turbo"
         messages=[
             {"role": "system", "content": "You are the voice of Solomon, the biblical king of wisdom."},
             {"role": "user", "content": prompt}
@@ -43,9 +42,9 @@ def get_solomon_question(mood: str) -> str:
         max_tokens=150
     )
 
-    return response['choices'][0]['message']['content'].strip()
+    return response.choices[0].message.content.strip()
 
-# --- UI Trigger ---
+# --- Trigger ---
 if st.button("Ask Solomon"):
     with st.spinner("Consulting the wisdom of Solomon..."):
         question = get_solomon_question(mood)
