@@ -1,55 +1,53 @@
-# solomon_bot_streamlit.py
-
 import streamlit as st
-import random
+import openai
+import os
 
 st.set_page_config(page_title="Solomon Bot", layout="centered")
 
-MOOD_QUESTIONS = {
-    "joyful": [
-        "O soul brimming with gladness, will you store this delight like treasure, that you may draw from it in the day of want?"
-    ],
-    "sorrowful": [
-        "Child of mourning, does not the night seem long to him who forgets that dawn is certain?"
-    ],
-    "anxious": [
-        "Heart restless as the hunted deer, can worry add a single cubit to your stature?"
-    ],
-    "angry": [
-        "Spirit ablaze, who among the quick-tempered has laid bricks of wrath and built a palace of peace?"
-    ],
-    "hopeful": [
-        "Seeker of dawn, will you let patience be the lamp that guides your feet till the sun breaks?"
-    ],
-    "weary": [
-        "Traveler heavy-laden, have you weighed the burden that wisdom bids you cast aside?"
-    ],
-    "contemplative": [
-        "Thinker beneath the fig tree, what gain is there in knowledge unseasoned by reverence?"
-    ],
-    "grateful": [
-        "Lips filled with praise, will your gratitude overflow to the poor who cannot repay?"
-    ],
-    "confused": [
-        "Wayfarer at the crossroads, have you asked the Ancient of Days which path leads under His wing?"
-    ],
-    "determined": [
-        "Builder with set face, will you sharpen your axe before striking the timber, lest you toil twice?"
-    ],
-    "fearful": [
-        "Soul trembling at unseen terrors, is the watchman awake if his trust is not in the Lord?"
-    ],
-    "bored": [
-        "Idler of empty hours, have you considered the ant and discerned wisdom in her diligence?"
-    ],
-}
-
+# --- Setup ---
 st.title("🦉 Solomon Bot")
-st.subheader("Receive a word of wisdom based on your mood.")
+st.subheader("Receive wisdom like Solomon, based on your current mood.")
 
-mood = st.selectbox("How do you feel today?", sorted(MOOD_QUESTIONS))
+# --- API Key ---
+openai_api_key = st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else os.getenv("OPENAI_API_KEY")
 
+if not openai_api_key:
+    st.warning("Please set your OpenAI API key in Streamlit secrets or as an environment variable.")
+    st.stop()
+
+openai.api_key = openai_api_key
+
+# --- Mood Selection ---
+moods = [
+    "joyful", "sorrowful", "anxious", "angry", "hopeful", "weary", "contemplative",
+    "grateful", "confused", "determined", "fearful", "bored"
+]
+mood = st.selectbox("What is your mood right now?", sorted(moods))
+
+# --- Call OpenAI ---
+def get_solomon_question(mood: str) -> str:
+    prompt = (
+        f"You are King Solomon from the Old Testament. "
+        f"Write a single thought-provoking question in poetic, biblical style, "
+        f"addressed to someone who is feeling {mood}. "
+        f"Your tone should be wise, reflective, and ancient."
+    )
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",  # or "gpt-3.5-turbo" if using that
+        messages=[
+            {"role": "system", "content": "You are the voice of Solomon, the biblical king of wisdom."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.9,
+        max_tokens=150
+    )
+
+    return response['choices'][0]['message']['content'].strip()
+
+# --- UI Trigger ---
 if st.button("Ask Solomon"):
-    question = random.choice(MOOD_QUESTIONS[mood])
-    st.markdown(f"### 📜 A question from Solomon:")
-    st.success(question)
+    with st.spinner("Consulting the wisdom of Solomon..."):
+        question = get_solomon_question(mood)
+        st.markdown("### 📜 A question from Solomon:")
+        st.success(question)
