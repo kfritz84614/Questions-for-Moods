@@ -1,14 +1,9 @@
-#!/usr/bin/env python3
-"""
-Solomon Bot – a tiny CLI chatbot that asks you a proverb-style
-question tailored to your current mood.
+# solomon_bot_streamlit.py
 
-Run:
-    python solomon_bot.py
-"""
-
+import streamlit as st
 import random
-import textwrap
+
+st.set_page_config(page_title="Solomon Bot", layout="centered")
 
 MOOD_QUESTIONS = {
     "joyful": [
@@ -49,24 +44,12 @@ MOOD_QUESTIONS = {
     ],
 }
 
-def prompt_mood() -> str:
-    """Ask the user for a mood in the simplest possible way."""
-    moods = ", ".join(sorted(MOOD_QUESTIONS))
-    while True:
-        mood = input(f"How do you feel right now? ({moods})\n> ").strip().lower()
-        if mood in MOOD_QUESTIONS:
-            return mood
-        print("❌  Sorry, I don’t recognize that mood. Try again.\n")
+st.title("🦉 Solomon Bot")
+st.subheader("Receive a word of wisdom based on your mood.")
 
-def ask_question(mood: str) -> None:
-    """Print a random question for the given mood."""
+mood = st.selectbox("How do you feel today?", sorted(MOOD_QUESTIONS))
+
+if st.button("Ask Solomon"):
     question = random.choice(MOOD_QUESTIONS[mood])
-    print("\n" + textwrap.fill(question, width=80) + "\n")
-
-def main() -> None:
-    print("=== Solomon Bot ===")
-    mood = prompt_mood()
-    ask_question(mood)
-
-if __name__ == "__main__":
-    main()
+    st.markdown(f"### 📜 A question from Solomon:")
+    st.success(question)
